@@ -3,7 +3,7 @@ import { prisma } from "../lib/db";
 import { cacheGet, cacheSet } from "../lib/redis";
 
 const SUMMARY_CACHE_KEY = "dashboard:summary";
-const SUMMARY_CACHE_TTL_SECONDS = 30; // short TTL: cheap safety net between explicit invalidations
+const SUMMARY_CACHE_TTL_SECONDS = 30;
 
 export interface MonthlyCashFlowPoint {
   month: string; // e.g. "2026-07"

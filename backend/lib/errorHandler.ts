@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { ApiError } from "../utils/ApiError";
+import { ApiError } from "../lib/ApiError";
 import { Prisma } from "@prisma/client";
 
 export function notFoundHandler(req: Request, res: Response) {

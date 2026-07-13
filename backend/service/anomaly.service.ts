@@ -1,5 +1,5 @@
 import { Transaction, TransactionType } from "@prisma/client";
-import { prisma } from "../config/db";
+import { prisma } from "../lib/db";
 import { createNotification } from "./notification.service";
 
 const ABS_FLOOR = Number(process.env.HIGH_EXPENSE_ABS_FLOOR ?? 5000);

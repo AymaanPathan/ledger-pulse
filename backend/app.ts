@@ -5,7 +5,7 @@ import morgan from "morgan";
 import transactionRoutes from './routes/transaction.routes'
 import dashboardRoutes from './routes/dashboard.routes'
 import notificationRoutes from "./routes/notification.routes";
-import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import { errorHandler, notFoundHandler } from "./lib/errorHandler";
 
 export function createApp() {
   const app = express();

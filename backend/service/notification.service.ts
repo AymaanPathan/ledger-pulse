@@ -1,6 +1,6 @@
 import { NotificationSeverity, Prisma } from "@prisma/client";
-import { prisma } from "../config/db";
-import { ApiError } from "../utils/ApiError";
+import { prisma } from "../lib/db";
+import { ApiError } from "../lib/ApiError";
 
 export interface CreateNotificationInput {
   type: string;

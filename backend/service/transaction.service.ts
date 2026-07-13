@@ -1,7 +1,7 @@
 import { Prisma, TransactionType } from "@prisma/client";
-import { prisma } from "../config/db";
-import { ApiError } from "../utils/ApiError";
-import { cacheDel } from "../config/redis";
+import { prisma } from "../lib/db";
+import { ApiError } from "../lib/ApiError";
+import { cacheDel } from "../lib/redis";
 import { analyzeNewTransaction } from "./anomaly.service";
 
 export interface ListTransactionsQuery {
