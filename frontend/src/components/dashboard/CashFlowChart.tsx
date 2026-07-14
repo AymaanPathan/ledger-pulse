@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -12,40 +11,20 @@ import {
 } from "recharts";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { MonthlyCashFlow } from "@/types/dashboard";
-import { formatCompactCurrency, formatCurrency, cn } from "@/lib/utils";
-
-const RANGES = ["7D", "1M", "3M", "1Y"] as const;
+import { formatCompactCurrency, formatCurrency } from "@/lib/utils";
 
 export default function CashFlowChart({ data }: { data: MonthlyCashFlow[] }) {
-  const [range, setRange] = useState<(typeof RANGES)[number]>("1M");
-
   const totalIn = data.reduce((sum, d) => sum + d.income, 0);
   const totalOut = data.reduce((sum, d) => sum + d.expense, 0);
 
   return (
     <Card data-reveal>
-      <CardHeader className="flex-col items-start gap-4 sm:flex-row sm:items-center">
+      <CardHeader>
         <div>
           <h3 className="text-sm font-semibold text-[#16181D]">Cash flow</h3>
           <p className="mt-0.5 text-xs text-[#6B7280]">
             Money moving in and out of your business
           </p>
-        </div>
-        <div className="flex items-center rounded-lg border border-[#E8EAED] bg-[#F7F8FA] p-0.5">
-          {RANGES.map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={cn(
-                "rounded-md px-2.5 py-1 text-xs font-medium transition-colors duration-200",
-                range === r
-                  ? "border border-[#E8EAED] bg-white text-[#16181D] shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
-                  : "text-[#6B7280] hover:text-[#16181D]",
-              )}
-            >
-              {r}
-            </button>
-          ))}
         </div>
       </CardHeader>
       <CardBody>
