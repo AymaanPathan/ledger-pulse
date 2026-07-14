@@ -15,10 +15,12 @@ interface TransactionState {
   error: string | null;
 }
 
+const defaultMeta = { page: 1, limit: 10, total: 0, totalPages: 0 };
+
 const initialState: TransactionState = {
   items: [],
   filters: { page: 1, limit: 10, sortBy: "date", sortOrder: "desc" },
-  meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+  meta: defaultMeta,
   status: "idle",
   error: null,
 };
@@ -70,17 +72,25 @@ const transactionSlice = createSlice({
       })
       .addCase(fetchTransactions.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.items = action.payload.data;
-        state.meta = action.payload.meta;
+        // API may omit `data`/`meta` entirely on empty results (204, or {} body)
+        state.items = Array.isArray(action.payload?.data)
+          ? action.payload.data
+          : [];
+        state.meta = action.payload?.meta ?? {
+          ...defaultMeta,
+          page: state.filters.page ?? 1,
+          limit: state.filters.limit ?? 10,
+        };
       })
       .addCase(fetchTransactions.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.error.message || "Failed to load transactions";
       })
       .addCase(createTransaction.fulfilled, (state, action) => {
-        state.items.unshift(action.payload);
+        if (action.payload) state.items.unshift(action.payload);
       })
       .addCase(updateTransaction.fulfilled, (state, action) => {
+        if (!action.payload) return;
         const idx = state.items.findIndex((t) => t.id === action.payload.id);
         if (idx !== -1) state.items[idx] = action.payload;
       })

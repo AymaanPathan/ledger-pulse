@@ -48,15 +48,20 @@ const notificationSlice = createSlice({
     builder
       .addCase(fetchNotifications.pending, (state) => {
         state.status = "loading";
+        state.error = null;
       })
       .addCase(fetchNotifications.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.items = action.payload.data;
-        state.unreadCount = action.payload.meta.unreadCount;
+        // API may return undefined/null data on empty result sets
+        state.items = Array.isArray(action.payload?.data)
+          ? action.payload.data
+          : [];
+        state.unreadCount = action.payload?.meta?.unreadCount ?? 0;
       })
       .addCase(fetchNotifications.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.error.message || "Failed to load notifications";
+        // don't leave stale items on screen if this was the first load
       })
       .addCase(markNotificationRead.fulfilled, (state, action) => {
         const item = state.items.find((n) => n.id === action.payload);

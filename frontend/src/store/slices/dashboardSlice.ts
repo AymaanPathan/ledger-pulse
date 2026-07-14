@@ -29,10 +29,12 @@ const dashboardSlice = createSlice({
     builder
       .addCase(fetchDashboardSummary.pending, (state) => {
         state.status = "loading";
+        state.error = null;
       })
       .addCase(fetchDashboardSummary.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.summary = action.payload;
+        // fall back to null rather than trusting an empty object shape from the API
+        state.summary = action.payload ?? null;
       })
       .addCase(fetchDashboardSummary.rejected, (state, action) => {
         state.status = "failed";

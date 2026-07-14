@@ -17,17 +17,18 @@ export default function Modal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-      <div className="w-full max-w-md rounded-lg border border-border bg-white shadow-card">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2 className="text-sm font-medium text-ink-900">{title}</h2>
+      <div className="w-full max-w-md rounded-2xl border border-[#E8EAED] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+        <div className="flex items-center justify-between border-b border-[#E8EAED] px-5 py-4">
+          <h2 className="text-sm font-semibold text-[#16181D]">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-ink-500 hover:bg-ink-300/10"
+            aria-label="Close"
+            className="rounded-lg p-1.5 text-[#9CA3AF] transition-colors duration-200 hover:bg-[#F7F8FA] hover:text-[#16181D]"
           >
             <X size={16} />
           </button>
         </div>
-        <div className="p-4">{children}</div>
+        <div className="p-5">{children}</div>
       </div>
     </div>
   );
