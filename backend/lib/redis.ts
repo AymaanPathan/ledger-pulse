@@ -1,10 +1,14 @@
 import Redis from "ioredis";
 
-const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6380";
+// Default is the standard Redis port. Pathway's sandbox runs Redis on 6379.
+// If your local Redis is on 6380, set REDIS_URL in backend/.env instead.
+const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 
 export const redis = new Redis(REDIS_URL, {
-  maxRetriesPerRequest: 3,
-  retryStrategy: (times) => Math.min(times * 200, 2000),
+  maxRetriesPerRequest: 1, // fail a command quickly instead of retrying it
+  enableOfflineQueue: false, // reject immediately while disconnected, don't queue
+  connectTimeout: 1000,
+  retryStrategy: (times) => Math.min(times * 200, 2000), // keep reconnecting in the background
 });
 
 redis.on("error", (err) => {
