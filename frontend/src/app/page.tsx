@@ -1,31 +1,48 @@
-"use client";
-
-import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { fetchDashboardSummary } from "../store/slices/dashboardSlice";
 import CashFlowChart from "@/components/dashboard/CashFlowChart";
 import SummaryCards from "@/components/dashboard/SummaryCards";
+import { DashboardSummary } from "@/types/dashboard";
 
-export default function DashboardPage() {
-  const dispatch = useAppDispatch();
-  const { summary, status } = useAppSelector((s) => s.dashboard);
+// ISR: this page is prerendered, then regenerated at most every 30s.
+// In a production build Next sends: Cache-Control: s-maxage=30, stale-while-revalidate
+export const revalidate = 30;
 
-  useEffect(() => {
-    dispatch(fetchDashboardSummary());
-  }, [dispatch]);
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
-  if (status === "loading" && !summary) {
-    return <div className="text-sm text-ink-500">Loading dashboard...</div>;
+// Rendered whenever the backend can't be reached (build time, tests, outages)
+const FALLBACK_SUMMARY = {
+  totalBalance: 0,
+  totalIncome: 0,
+  totalExpense: 0,
+  netCashFlow: 0,
+  balanceChangePct: 0,
+  incomeChangePct: 0,
+  expenseChangePct: 0,
+  netChangePct: 0,
+  monthlyCashFlow: [],
+} as unknown as DashboardSummary;
+
+async function getSummary(): Promise<DashboardSummary> {
+  try {
+    const res = await fetch(`${API_URL}/dashboard/summary`, {
+      next: { revalidate: 30 },
+      signal: AbortSignal.timeout(2000), // fail fast when no backend is running
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    return json?.data ?? json ?? FALLBACK_SUMMARY;
+  } catch {
+    return FALLBACK_SUMMARY;
   }
+}
 
-  if (!summary) {
-    return <div className="text-sm text-ink-500">No data available.</div>;
-  }
+export default async function DashboardPage() {
+  const summary = await getSummary();
 
   return (
     <div className="space-y-6">
       <SummaryCards summary={summary} />
-      <CashFlowChart data={summary.monthlyCashFlow} />
+      <CashFlowChart data={summary.monthlyCashFlow ?? []} />
     </div>
   );
 }
+q
