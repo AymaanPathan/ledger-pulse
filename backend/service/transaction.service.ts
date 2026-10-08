@@ -1,4 +1,4 @@
-import { Prisma, TransactionType } from "@prisma/client";
+import { Prisma, Transaction, TransactionType } from "@prisma/client";
 import { prisma } from "../lib/db";
 import { ApiError } from "../lib/ApiError";
 import { cacheDel } from "../lib/redis";
@@ -24,7 +24,31 @@ export interface CreateTransactionInput {
   date: Date;
 }
 
-export type UpdateTransactionInput = Partial<CreateTransactionInput>;
+export type UpdateTransactionInput = Partial<CreateTransactionInput> & {
+  version?: number;
+};
+
+/** Thrown when the client sends a version that doesn't match the stored one. */
+export class VersionConflictError extends Error {
+  constructor(public readonly currentVersion: number) {
+    super("Version conflict");
+    this.name = "VersionConflictError";
+  }
+}
+
+/** Thrown when the client doesn't send a version at all. */
+export class VersionRequiredError extends Error {
+  constructor() {
+    super("Version is required");
+    this.name = "VersionRequiredError";
+  }
+}
+
+/** Prisma Decimal serializes as a string; the API contract exposes a number. */
+export const serializeTransaction = (tx: Transaction) => ({
+  ...tx,
+  amount: Number(tx.amount),
+});
 
 const invalidateDashboardCache = () => cacheDel("dashboard:*");
 
@@ -75,6 +99,7 @@ export async function getTransactionById(id: string) {
 }
 
 export async function createTransaction(input: CreateTransactionInput) {
+  // `version` defaults to 1 at the database level.
   const tx = await prisma.transaction.create({
     data: {
       amount: input.amount,
@@ -99,20 +124,46 @@ export async function createTransaction(input: CreateTransactionInput) {
   return tx;
 }
 
-export async function updateTransaction(id: string, input: UpdateTransactionInput) {
+export async function updateTransaction(
+  id: string,
+  input: UpdateTransactionInput,
+) {
+  // 428: the client must tell us which version it last saw.
+  if (input.version === undefined || input.version === null) {
+    throw new VersionRequiredError();
+  }
+
   const existing = await prisma.transaction.findUnique({ where: { id } });
   if (!existing) throw ApiError.notFound("Transaction not found");
 
-  const tx = await prisma.transaction.update({
-    where: { id },
+  // Atomic compare-and-set. The version check, the field updates and the
+  // version increment all happen in ONE SQL UPDATE ... WHERE id = ? AND
+  // version = ?, so concurrent writers can't both succeed.
+  const result = await prisma.transaction.updateMany({
+    where: { id, version: input.version },
     data: {
       ...(input.amount !== undefined ? { amount: input.amount } : {}),
       ...(input.type !== undefined ? { type: input.type } : {}),
       ...(input.category !== undefined ? { category: input.category } : {}),
-      ...(input.description !== undefined ? { description: input.description || null } : {}),
+      ...(input.description !== undefined
+        ? { description: input.description || null }
+        : {}),
       ...(input.date !== undefined ? { date: input.date } : {}),
+      version: { increment: 1 },
     },
   });
+
+  if (result.count === 0) {
+    // Stale version (or we lost a race). Nothing was changed.
+    const current = await prisma.transaction.findUnique({
+      where: { id },
+      select: { version: true },
+    });
+    if (!current) throw ApiError.notFound("Transaction not found");
+    throw new VersionConflictError(current.version);
+  }
+
+  const tx = await prisma.transaction.findUniqueOrThrow({ where: { id } });
 
   await invalidateDashboardCache();
   return tx;

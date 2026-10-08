@@ -21,6 +21,10 @@ export const updateTransactionSchema = z.object({
     category: z.string().trim().min(1).max(60).optional(),
     description: z.string().trim().max(500).optional().or(z.literal("")),
     date: z.coerce.date().optional(),
+    // Optional here on purpose: a missing version must reach the service
+    // and produce 428 (not a 400 from validation). Do NOT use z.coerce here,
+    // since coerce turns undefined into NaN.
+    version: z.number().int().min(1).optional(),
   }),
   params: z.object({
     id: z.string().min(1),
