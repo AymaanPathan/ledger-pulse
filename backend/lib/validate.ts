@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { AnyZodObject, ZodError } from "zod";
+import { ApiError } from "../lib/ApiError";
 
 export const validate =
   (schema: AnyZodObject) =>
@@ -10,18 +11,17 @@ export const validate =
         query: req.query,
         params: req.params,
       });
+
       req.body = parsed.body ?? req.body;
       req.query = parsed.query ?? req.query;
       req.params = parsed.params ?? req.params;
+
       next();
     } catch (err) {
       if (err instanceof ZodError) {
-        return res.status(400).json({
-          success: false,
-          message: "Validation failed",
-          details: err.flatten(),
-        });
+        return next(ApiError.badRequest("Validation failed", err.flatten()));
       }
+
       next(err);
     }
   };
